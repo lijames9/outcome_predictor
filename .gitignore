@@ -1,0 +1,14 @@
+# Raw third-party Kaggle dataset -- large, and not ours to redistribute
+kagglehub/
+
+# Local tool config, not part of the project
+.claude/
+
+# Jupyter / Python
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# C++ build artifacts (cpp_backtester/ has its own .gitignore too)
+*.o
+*.exe
