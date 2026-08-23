@@ -57,3 +57,28 @@ game_id,season_year,model_prob_home,implied_home,decimal_home,decimal_away,home_
 Consistent with the Python findings: no threshold produces a positive ROI on the held-out
 2025-26 season, despite an encouraging-looking trend in the exploration seasons -- a clean
 demonstration of why out-of-sample validation matters before trusting a backtest.
+
+## Runtime vs. the Python implementation
+
+Same task (load 5,229 games, run the threshold sweep over both the exploration and holdout
+sets), same machine, measured as the median of 20 in-process runs to smooth out first-run
+noise:
+
+| Phase | Python (pandas/numpy) | C++ |
+|---|---|---|
+| Backtest computation | ~9.5 ms | ~0 ms (sub-millisecond) |
+| CSV load + parse | ~6.2 ms | ~15-17 ms |
+
+The **computation** step is the fair, apples-to-apples comparison -- pure per-language
+execution speed on identical in-memory data, and C++ wins by roughly an order of magnitude, as
+expected for tight numeric loops over a compiled language vs. an interpreted one.
+
+The **CSV load** result is the more interesting finding, and it's a toolchain artifact worth
+being upfront about rather than hiding: profiling this locally (this repo was built and tested
+against MinGW GCC 6.3, a dated Windows toolchain) showed that after minimizing allocations, the
+remaining cost is dominated by `strtod`/`strtoll` themselves (~0.5us/call in isolation) -- an
+apparent inefficiency in this specific C runtime's numeric parsing, not something addressable
+by further restructuring the surrounding C++. On a modern toolchain this would very likely
+disappear; on this one, it happens to erase C++'s usual I/O advantage over pandas for a file
+this size. Reported here rather than omitted, since an accurate benchmark is more useful than
+a flattering one.
